@@ -44,15 +44,21 @@ public class MyTests
 
 ## Running tests
 
-Run tests with the standalone `Surity.exe` executable or by installing the dotnet tool:
+Tests must be run inside the game if they depend on the Unity runtime.
+
+If you use the [BepInEx](https://github.com/BepInEx/BepInEx) modding framework, you can add the [Surity.BepInEx](https://www.nuget.org/packages/Surity.BepInEx) NuGet package to your test project. The package contains a BepInEx plugin which makes sure all loaded Surity tests are ran only once. The plugin only runs tests if the game was started with the Surity CLI program.
+
+Refer to [Surity.BepInEx.cs](Surity.BepInEx/Surity.BepInEx.cs) on how to invoke the test runner manually.
+
+### Using Surity CLI
+
+Run tests with the standalone [Surity.exe](/releases/latest) executable or by installing the dotnet tool:
 
 ```
 $ dotnet tool install Surity.CLI
-$ dotnet surity \<path-to-game-exe\>
+$ dotnet surity <path-to-game-exe> [arguments]
 ```
 
-The program runs the game and listens for test results.
+The program runs the game in [batchmode](https://docs.unity3d.com/Manual/PlayerCommandLineArguments.html) and listens for test results.
 
-If you use the [BepInEx](https://github.com/BepInEx/BepInEx) modding framework, you can add the `Surity.BepInEx` NuGet package as a dependency to your test project. The `Surity.BepInEx` package is a BepInEx plugin which runs all loaded Surity tests if the game was started with `Surity.exe`.
-
-Refer to [Surity.BepInEx.cs](Surity.BepInEx/Surity.BepInEx.cs) if you need or want to invoke the test runner manually.
+Any arguments besides the path to the game executable are passed to the game.
