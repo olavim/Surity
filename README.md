@@ -48,7 +48,7 @@ Tests must be run inside the game if they depend on the Unity runtime.
 
 If you use the [BepInEx](https://github.com/BepInEx/BepInEx) modding framework, you can add the [Surity.BepInEx](https://www.nuget.org/packages/Surity.BepInEx) NuGet package to your test project. The package contains a BepInEx plugin which makes sure all loaded Surity tests are ran only once. The plugin only runs tests if the game was started with the Surity CLI program.
 
-Refer to [Surity.BepInEx.cs](Surity.BepInEx/Surity.BepInEx.cs) on how to invoke the test runner manually.
+Refer to [Surity.BepInEx.cs](Surity.BepInEx/Surity.BepInEx.cs) on how to invoke the test runner manually. Add the [Surity.Core](https://www.nuget.org/packages/Surity.Core) NuGet package to your test project if you don't need `Surity.BepInEx`.
 
 ### Using Surity CLI
 
