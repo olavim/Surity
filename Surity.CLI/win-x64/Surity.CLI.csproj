@@ -1,16 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	<Import Project="..\BuildProps.props" />
+	<Import Project="..\..\BuildProps.props" />
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Surity.Core\Surity.Core.csproj" />
+		<Compile Include="..\src\**\*.cs" />
+	</ItemGroup>
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<IsPackable>false</IsPackable>
 		<PublishSingleFile>true</PublishSingleFile>
+		<SelfContained>false</SelfContained>
 		<TargetFramework>netcoreapp3.1</TargetFramework>
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 		<AssemblyName>Surity</AssemblyName>
 	</PropertyGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\Surity.Core\Surity.Core.csproj" />
-	</ItemGroup>
 </Project>

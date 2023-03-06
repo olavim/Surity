@@ -1,11 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<Import Project="..\BuildProps.props" />
 
+	<PropertyGroup>
+		<TargetFrameworks>netcoreapp3.1;net472</TargetFrameworks>
+		<IsPublishable>false</IsPublishable>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<PackageReference Include="UnityEngine.Modules" Version="2018.4.34" IncludeAssets="compile" PrivateAssets="all" />
 	</ItemGroup>
-
-	<PropertyGroup>
-		<TargetFrameworks>netcoreapp3.1;net472</TargetFrameworks>
-	</PropertyGroup>
 </Project>
