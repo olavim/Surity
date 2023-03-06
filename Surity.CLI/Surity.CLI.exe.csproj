@@ -3,9 +3,10 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<PackAsTool>true</PackAsTool>
-		<ToolCommandName>surity</ToolCommandName>
+		<IsPackable>false</IsPackable>
+		<PublishSingleFile>true</PublishSingleFile>
 		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 		<AssemblyName>Surity</AssemblyName>
 	</PropertyGroup>
 

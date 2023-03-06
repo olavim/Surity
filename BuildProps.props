@@ -4,7 +4,16 @@
 		<Authors>olavim</Authors>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<PackageOutputPath>./nupkg</PackageOutputPath>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/olavim/Surity.git</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="$(SolutionDir)\LICENSE" Pack="true" PackagePath=""/>
+		<None Include="$(SolutionDir)\README.md" Pack="true" PackagePath=""/>
+	</ItemGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<DefineConstants>DEBUG;TRACE</DefineConstants>
