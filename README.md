@@ -44,9 +44,12 @@ public class MyTests
 
 ## Running tests
 
-Run tests with
+Run tests with the standalone `Surity.exe` executable or by installing the dotnet tool:
 
-> Surity.exe \<path-to-game-exe\>
+```
+$ dotnet tool install Surity.CLI
+$ dotnet surity \<path-to-game-exe\>
+```
 
 The program runs the game and listens for test results.
 
