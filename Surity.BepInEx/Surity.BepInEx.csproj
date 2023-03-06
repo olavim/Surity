@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\BuildProps.props" />
+
+	<PropertyGroup>
+		<TargetFrameworks>netcoreapp3.1;net472</TargetFrameworks>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Surity.Core\Surity.Core.csproj" />
+		<PackageReference Include="UnityEngine.Modules" Version="2018.4.34" IncludeAssets="compile" PrivateAssets="all" />
+		<PackageReference Include="BepInEx.Core" Version="5.4.19" IncludeAssets="compile" PrivateAssets="all" />
+	</ItemGroup>
+</Project>
