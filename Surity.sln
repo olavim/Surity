@@ -6,6 +6,7 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8B7FD9E1-E574-4760-9708-74E0BB78166C}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		AssemblyInfo.cs = AssemblyInfo.cs
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Surity.Core", "Surity.Core\Surity.Core.csproj", "{26167F69-9A0B-4C65-B98C-E17A530E9289}"

@@ -1,10 +1,14 @@
 <Project>
 	<PropertyGroup>
+		<Version>1.0.1</Version>
 		<RootNamespace>Surity</RootNamespace>
 		<Authors>olavim</Authors>
+		<AppDesignerFolder>Properties</AppDesignerFolder>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<RestorePackagesPath>.\packages</RestorePackagesPath>
-		<PackageOutputPath>./nupkg</PackageOutputPath>
+		<PublishDir>$(MSBuildThisFileDirectory)\release</PublishDir>
+		<PackageVersion>$(Version)</PackageVersion>
+		<PackageOutputPath>$(MSBuildThisFileDirectory)\release</PackageOutputPath>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/olavim/Surity.git</RepositoryUrl>
@@ -12,19 +16,21 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="$(SolutionDir)\LICENSE" Pack="true" PackagePath=""/>
-		<None Include="$(SolutionDir)\README.md" Pack="true" PackagePath=""/>
+		<None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="" />
+		<None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
 		<DefineConstants>DEBUG;TRACE</DefineConstants>
 		<DebugType>full</DebugType>
 		<DebugSymbols>true</DebugSymbols>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
 		<DefineConstants>TRACE</DefineConstants>
-		<DebugType>pdbonly</DebugType>
+		<DebugSymbols>false</DebugSymbols>
+		<DebugType>none</DebugType>
 		<Optimize>true</Optimize>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 	</PropertyGroup>
 </Project>
