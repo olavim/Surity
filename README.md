@@ -56,9 +56,15 @@ Run tests with the standalone [Surity.exe](https://github.com/olavim/Surity/rele
 
 ```
 $ dotnet tool install Surity.CLI
-$ dotnet surity <path-to-game-exe> [arguments]
+$ dotnet surity <path-to-game-exe> [-- arguments]
 ```
 
 The program runs the game in [batchmode](https://docs.unity3d.com/Manual/PlayerCommandLineArguments.html) and listens for test results.
 
-Any arguments besides the path to the game executable are passed to the game.
+Any arguments after `--` are passed to the game. For example in
+
+```
+$ dotnet surity <path-to-game-exe> -- -nolog
+```
+
+the `-nolog` argument is passed to the game executable.
