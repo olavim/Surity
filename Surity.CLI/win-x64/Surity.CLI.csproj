@@ -1,6 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	<Import Project="..\..\BuildProps.props" />
-
 	<ItemGroup>
 		<ProjectReference Include="..\..\Surity.Core\Surity.Core.csproj" />
 		<Compile Include="..\src\**\*.cs" />

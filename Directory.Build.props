@@ -6,9 +6,9 @@
 		<AppDesignerFolder>Properties</AppDesignerFolder>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<RestorePackagesPath>.\packages</RestorePackagesPath>
-		<PublishDir>$(MSBuildThisFileDirectory)\release</PublishDir>
+		<PublishDir>$(MSBuildThisFileDirectory)release</PublishDir>
 		<PackageVersion>$(Version)</PackageVersion>
-		<PackageOutputPath>$(MSBuildThisFileDirectory)\release</PackageOutputPath>
+		<PackageOutputPath>$(MSBuildThisFileDirectory)release</PackageOutputPath>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/olavim/Surity.git</RepositoryUrl>
