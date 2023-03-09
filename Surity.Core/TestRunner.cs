@@ -29,15 +29,13 @@ namespace Surity
 
 		public IEnumerator DiscoverAndRun()
 		{
-			var testClasses = AppDomain.CurrentDomain
-				.GetAssemblies()
-				.SelectMany(a => a.GetTypes().Where(t => t.GetCustomAttribute<TestClass>()?.skip == false));
+			var testClasses = this.GetTestClasses();
 
 			var testClassesWithOnly = testClasses.Where(t => t.GetCustomAttribute<TestClass>().only);
 
 			if (testClassesWithOnly.Any())
 			{
-				testClasses = testClassesWithOnly;
+				testClasses = testClassesWithOnly.ToArray();
 			}
 
 			foreach (var testClass in testClasses)
@@ -155,6 +153,38 @@ namespace Surity
 				.Where(m => m.GetCustomAttributes<T>().Any())
 				.Select(m => new TestStepInfo(m.Name, testClassType, m))
 				.ToArray();
+		}
+
+		private Type[] GetTestClasses()
+		{
+			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+			var types = new List<Type>();
+
+			foreach (var assembly in assemblies)
+			{
+				try
+				{
+					types.AddRange(assembly.GetTypes());
+				}
+				catch (Exception ex)
+				{
+					if (ex is ReflectionTypeLoadException reflectionEx)
+					{
+						foreach (var loaderEx in reflectionEx.LoaderExceptions)
+						{
+							UnityEngine.Debug.LogException(loaderEx);
+						}
+
+						types.AddRange(reflectionEx.Types.Where(t => t != null));
+					}
+					else
+					{
+						UnityEngine.Debug.LogException(ex);
+					}
+				}
+			}
+
+			return types.Where(t => t.GetCustomAttribute<TestClass>()?.skip == false).ToArray();
 		}
 	}
 }
