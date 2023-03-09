@@ -9,6 +9,6 @@
 		<PackAsTool>true</PackAsTool>
 		<ToolCommandName>surity</ToolCommandName>
 		<TargetFramework>netcoreapp3.1</TargetFramework>
-		<IsPublishable>false</IsPublishable>
+		<PublishDir>bin\$(Configuration)\$(TargetFramework)\publish</PublishDir>
 	</PropertyGroup>
 </Project>
