@@ -3,34 +3,68 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace Surity
 {
 	public class AdapterListener : IDisposable
 	{
-		public const int MESSAGE_PORT = 45750;
+		public const int LISTENER_PORT = 45750;
+		public const byte MESSAGE_TESTRESULT = 0;
+		public const byte MESSAGE_FINISH = 1;
 
 		private readonly Socket listener;
-		private Socket connection;
 		private readonly List<byte> receiveBuffer = new List<byte>();
+		private readonly ManualResetEvent connectionEvent;
+		private readonly ManualResetEvent receiveEvent;
+		private Socket connection;
 		private int receiveLength;
 
 		public AdapterListener()
 		{
+			this.connectionEvent = new ManualResetEvent(false);
+			this.receiveEvent = new ManualResetEvent(false);
 			this.listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-			this.listener.Bind(new IPEndPoint(IPAddress.Parse("127.0.0.1"), AdapterListener.MESSAGE_PORT));
+			this.listener.Bind(new IPEndPoint(IPAddress.Parse("127.0.0.1"), AdapterListener.LISTENER_PORT));
 			this.listener.Listen(1);
 		}
 
-		public void WaitForClient()
+		public void WaitForClient(WaitHandle cancelToken)
 		{
-			this.connection = this.listener.Accept();
+			this.connectionEvent.Reset();
+
+			var ar = this.listener.BeginAccept(new AsyncCallback(this.OnConnection), this.listener);
+			WaitHandle.WaitAny(new WaitHandle[] { cancelToken, this.connectionEvent });
+
+			if (ar.IsCompleted)
+			{
+				this.connection = this.listener.EndAccept(ar);
+			}
 		}
 
-		public TestResult ReceiveTestResult()
+		public Message ReceiveMessage(WaitHandle cancelToken)
 		{
-			byte[] buffer = new byte[4096];
-			int received = this.connection.Receive(buffer, SocketFlags.None);
+			if (this.connection == null)
+			{
+				return null;
+			}
+
+			this.receiveEvent.Reset();
+
+			var buffer = new byte[4096];
+			int received;
+			var ar = this.connection.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(this.OnReceive), this.connection);
+			WaitHandle.WaitAny(new WaitHandle[] { cancelToken, this.receiveEvent });
+
+			if (ar.IsCompleted)
+			{
+				received = this.connection.EndReceive(ar);
+			}
+			else
+			{
+				return null;
+			}
+
 			this.receiveBuffer.AddRange(buffer.Take(received));
 
 			if (this.receiveLength == 0 && this.receiveBuffer.Count >= 4)
@@ -42,7 +76,7 @@ namespace Surity
 			if (this.receiveLength > 0 && this.receiveBuffer.Count >= this.receiveLength)
 			{
 				var messageBytes = this.receiveBuffer.GetRange(0, this.receiveLength).ToArray();
-				var message = TestResult.Deserialize(messageBytes);
+				var message = Message.Deserialize(messageBytes);
 
 				this.receiveBuffer.RemoveRange(0, this.receiveLength);
 				this.receiveLength = 0;
@@ -51,6 +85,16 @@ namespace Surity
 			}
 
 			return null;
+		}
+
+		private void OnConnection(IAsyncResult ar)
+		{
+			this.connectionEvent.Set();
+		}
+
+		private void OnReceive(IAsyncResult ar)
+		{
+			this.receiveEvent.Set();
 		}
 
 		public void Dispose()

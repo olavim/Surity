@@ -2,13 +2,19 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 
 namespace Surity
 {
 	public static class Surity
 	{
+		private static bool exitRequested;
+		private static readonly ManualResetEvent ExitEvent = new ManualResetEvent(false);
+
 		private static int Main(string[] args)
 		{
+			Console.CancelKeyPress += Surity.OnExit;
+
 			var forwardArgs = new List<string>();
 			int doubleDashIndex = Array.IndexOf(args, "--");
 			if (doubleDashIndex != -1)
@@ -17,6 +23,13 @@ namespace Surity
 			}
 
 			return Surity.RunExecutable(args[0], forwardArgs.ToArray());
+		}
+
+		private static void OnExit(object sender, ConsoleCancelEventArgs args)
+		{
+			args.Cancel = true;
+			Surity.exitRequested = true;
+			Surity.ExitEvent.Set();
 		}
 
 		private static int RunExecutable(string source, string[] forwardArgs)
@@ -47,28 +60,36 @@ namespace Surity
 
 			Console.WriteLine("Waiting for test adapter...");
 
-			listener.WaitForClient();
+			listener.WaitForClient(Surity.ExitEvent);
 
 			Console.WriteLine("Test run started");
 
-			TestResult result;
+			Message message;
 			string category = "";
 
-			while ((result = listener.ReceiveTestResult()) != null)
+			while ((message = listener.ReceiveMessage(Surity.ExitEvent)) != null)
 			{
-				testResults.Add(result);
-
-				if (result.testCategory != category)
+				if (message is TestResultMessage resultMessage)
 				{
-					category = result.testCategory;
-					Surity.PrintCategory(category);
+					testResults.Add(resultMessage.result);
+
+					if (resultMessage.result.testCategory != category)
+					{
+						category = resultMessage.result.testCategory;
+						Surity.PrintCategory(category);
+					}
+
+					Surity.PrintTestResult(resultMessage.result);
+
+					if (!resultMessage.result.pass)
+					{
+						failedTestResults.Add(resultMessage.result);
+					}
 				}
 
-				Surity.PrintTestResult(result);
-
-				if (!result.pass)
+				if (message is FinishMessage)
 				{
-					failedTestResults.Add(result);
+					break;
 				}
 			}
 
@@ -79,7 +100,13 @@ namespace Surity
 
 			Surity.PrintSummary(testResults);
 
+			process.Kill();
 			process.WaitForExit();
+
+			if (Surity.exitRequested)
+			{
+				return 2;
+			}
 
 			return failedTestResults.Count == 0 ? 0 : 1;
 		}

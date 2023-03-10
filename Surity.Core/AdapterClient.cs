@@ -1,7 +1,6 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
 namespace Surity
 {
@@ -12,17 +11,23 @@ namespace Surity
 		public AdapterClient()
 		{
 			this.socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-			this.socket.Connect(IPAddress.Parse("127.0.0.1"), AdapterListener.MESSAGE_PORT);
+			this.socket.Connect(IPAddress.Parse("127.0.0.1"), AdapterListener.LISTENER_PORT);
 		}
 
-		public void SendTestResult(TestResult message)
+		public void SendTestResult(TestResult result)
 		{
-			this.socket.Send(GetMessageBytes(message), SocketFlags.None);
+			var message = new TestResultMessage(result);
+			this.socket.Send(this.GetMessageBytes(message), SocketFlags.None);
 		}
 
-		private byte[] GetMessageBytes(TestResult message)
+		public void SendFinishMessage()
 		{
-			var messageBytes = message.Serialize();
+			this.socket.Send(new byte[] { AdapterListener.MESSAGE_FINISH }, SocketFlags.None);
+		}
+
+		private byte[] GetMessageBytes(Message message)
+		{
+			var messageBytes = Message.Serialize(message);
 			var prefixBytes = BitConverter.GetBytes(messageBytes.Length);
 
 			var bytes = new byte[prefixBytes.Length + messageBytes.Length];

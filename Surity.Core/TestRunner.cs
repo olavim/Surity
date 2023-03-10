@@ -15,8 +15,9 @@ namespace Surity
 			using (var client = new AdapterClient())
 			{
 				var runner = new TestRunner(client);
+				UnityEngine.Debug.Log("RunTestsAndExit start");
 				yield return runner.DiscoverAndRun();
-				UnityEngine.Application.Quit();
+				UnityEngine.Debug.Log("RunTestsAndExit end");
 			}
 		}
 
@@ -29,6 +30,8 @@ namespace Surity
 
 		public IEnumerator DiscoverAndRun()
 		{
+			this.DebugLog("Test discovery started");
+
 			var testClasses = this.GetTestClasses();
 
 			var testClassesWithOnly = testClasses.Where(t => t.GetCustomAttribute<TestClass>().only);
@@ -38,20 +41,30 @@ namespace Surity
 				testClasses = testClassesWithOnly.ToArray();
 			}
 
+			this.DebugLog($"Found {testClasses.Length} test classes");
+
 			foreach (var testClass in testClasses)
 			{
 				var executions = this.GetExecutionGroups(testClass).ToList();
+
+				this.DebugLog($"Test class {testClass.FullName} has {executions.Count} execution groups");
 
 				if (executions.Count == 0)
 				{
 					continue;
 				}
 
+				this.DebugLog($"Running {executions.Count - 2} tests in {testClass.FullName}");
+
 				var instance = Activator.CreateInstance(testClass);
 
 				for (int i = 0; i < executions.Count; i++)
 				{
 					var exec = executions[i];
+
+					string id = string.Join(" -> ", exec.Steps.Select(step => $"[{step.StepType.Name}] {step.Name}"));
+					this.DebugLog($"Running {exec.Name}: {id}");
+
 					yield return this.Run(instance, exec);
 
 					// Skip BeforeAll and AfterAll executions
@@ -119,6 +132,7 @@ namespace Surity
 						}
 						catch (Exception e)
 						{
+							this.DebugLog(e.ToString());
 							execution.Result = ExecutionResult.Fail(e.ToString());
 							yield break;
 						}
@@ -137,7 +151,7 @@ namespace Surity
 					}
 					catch (TargetInvocationException e)
 					{
-						execution.Result = ExecutionResult.Fail(e.GetBaseException().Message);
+						execution.Result = ExecutionResult.Fail(e.GetBaseException().ToString());
 						yield break;
 					}
 				}
@@ -151,7 +165,7 @@ namespace Surity
 			return testClassType
 				.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
 				.Where(m => m.GetCustomAttributes<T>().Any())
-				.Select(m => new TestStepInfo(m.Name, testClassType, m))
+				.Select(m => new TestStepInfo(typeof(T), m.Name, testClassType, m))
 				.ToArray();
 		}
 
@@ -185,6 +199,11 @@ namespace Surity
 			}
 
 			return types.Where(t => t.GetCustomAttribute<TestClass>()?.skip == false).ToArray();
+		}
+
+		private void DebugLog(string message)
+		{
+			UnityEngine.Debug.Log($"[Surity] {message}");
 		}
 	}
 }
