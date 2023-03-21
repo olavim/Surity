@@ -7,7 +7,7 @@ using Spectre.Console.Cli;
 
 namespace Surity
 {
-	internal static class Surity
+	internal static class Program
 	{
 		public static bool exitRequested;
 		public static readonly ManualResetEvent ExitEvent = new ManualResetEvent(false);
@@ -54,7 +54,10 @@ namespace Surity
 		{
 			public void Log(string message)
 			{
-				AnsiConsole.WriteLine(message);
+				foreach (string line in message.Split('\n'))
+				{
+					AnsiConsole.WriteLine(line);
+				}
 			}
 		}
 	}

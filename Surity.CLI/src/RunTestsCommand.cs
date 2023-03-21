@@ -99,11 +99,11 @@ Examples:
 					.SpinnerStyle(new Style(foreground: Color.Grey))
 					.Start("Waiting for test adapter...", ctx =>
 					{
-						listener.WaitForClient(Surity.ExitEvent);
+						listener.WaitForClient(Program.ExitEvent);
 
 						while (true)
 						{
-							message = listener.ReceiveMessage(Surity.ExitEvent);
+							message = listener.ReceiveMessage(Program.ExitEvent);
 
 							if (message is TestInfoMessage infoMessage)
 							{
@@ -134,9 +134,14 @@ Examples:
 								}
 							}
 
-							if (message is FinishMessage f)
+							if (message is DebugMessage debugMessage)
 							{
-								finishReason = f.reason;
+								Debug.Log(debugMessage.message);
+							}
+
+							if (message is FinishMessage finishMessage)
+							{
+								finishReason = finishMessage.reason;
 								break;
 							}
 						}
@@ -169,7 +174,7 @@ Examples:
 				return 1;
 			}
 
-			if (Surity.exitRequested)
+			if (Program.exitRequested)
 			{
 				return 2;
 			}
