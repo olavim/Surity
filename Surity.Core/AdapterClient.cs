@@ -1,6 +1,8 @@
+using Newtonsoft.Json;
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 namespace Surity
 {
@@ -14,20 +16,38 @@ namespace Surity
 			this.socket.Connect(IPAddress.Parse("127.0.0.1"), AdapterListener.LISTENER_PORT);
 		}
 
+		public void SendTestInfo(TestInfo testInfo)
+		{
+			this.SendMessage(new TestInfoMessage(testInfo));
+		}
+
 		public void SendTestResult(TestResult result)
 		{
-			var message = new TestResultMessage(result);
-			this.socket.Send(this.GetMessageBytes(message), SocketFlags.None);
+			this.SendMessage(new TestResultMessage(result));
+		}
+
+		public void SendDebugMessage(string message)
+		{
+			this.SendMessage(new DebugMessage(message));
 		}
 
 		public void SendFinishMessage()
 		{
-			this.socket.Send(new byte[] { AdapterListener.MESSAGE_FINISH }, SocketFlags.None);
+			this.SendMessage(new FinishMessage("Test run finished"));
 		}
 
-		private byte[] GetMessageBytes(Message message)
+		public void SendMessage(IMessage message)
 		{
-			var messageBytes = Message.Serialize(message);
+			this.socket.Send(this.GetMessageBytes(message), SocketFlags.None);
+		}
+
+		private byte[] GetMessageBytes(IMessage message)
+		{
+			string messageJson = JsonConvert.SerializeObject(message, new JsonSerializerSettings
+			{
+				TypeNameHandling = TypeNameHandling.All
+			});
+			var messageBytes = Encoding.UTF8.GetBytes(messageJson);
 			var prefixBytes = BitConverter.GetBytes(messageBytes.Length);
 
 			var bytes = new byte[prefixBytes.Length + messageBytes.Length];

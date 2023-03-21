@@ -6,33 +6,28 @@ using System.Reflection;
 
 namespace Surity
 {
-	public class TestRunner
+	public static class TestRunner
 	{
-		public static bool IsTestClient => System.Environment.GetCommandLineArgs().Any(arg => arg == "-runSurityTests");
+		public static bool IsTestClient => Environment.GetCommandLineArgs().Any(arg => arg == "-runSurityTests");
 
 		public static IEnumerator RunTestsAndExit()
 		{
 			using (var client = new AdapterClient())
 			{
-				var runner = new TestRunner(client);
-				UnityEngine.Debug.Log("RunTestsAndExit start");
-				yield return runner.DiscoverAndRun();
-				UnityEngine.Debug.Log("RunTestsAndExit end");
+				yield return RunTestsAndExit(client);
 			}
 		}
 
-		private readonly AdapterClient client;
-
-		public TestRunner(AdapterClient client)
+		public static IEnumerator RunTestsAndExit(AdapterClient client)
 		{
-			this.client = client;
+			yield return DiscoverAndRun(client);
 		}
 
-		public IEnumerator DiscoverAndRun()
+		private static IEnumerator DiscoverAndRun(AdapterClient client)
 		{
-			this.DebugLog("Test discovery started");
+			DebugLog("Test discovery started");
 
-			var testClasses = this.GetTestClasses();
+			var testClasses = GetTestClasses();
 
 			var testClassesWithOnly = testClasses.Where(t => t.GetCustomAttribute<TestClass>().only);
 
@@ -41,20 +36,20 @@ namespace Surity
 				testClasses = testClassesWithOnly.ToArray();
 			}
 
-			this.DebugLog($"Found {testClasses.Length} test classes");
+			DebugLog($"Found {testClasses.Length} test classes");
 
 			foreach (var testClass in testClasses)
 			{
-				var executions = this.GetExecutionGroups(testClass).ToList();
+				var executions = GetExecutionGroups(testClass).ToList();
 
-				this.DebugLog($"Test class {testClass.FullName} has {executions.Count} execution groups");
+				DebugLog($"Test class {testClass.FullName} has {executions.Count} execution groups");
 
 				if (executions.Count == 0)
 				{
 					continue;
 				}
 
-				this.DebugLog($"Running {executions.Count - 2} tests in {testClass.FullName}");
+				DebugLog($"Running {executions.Count - 2} tests in {testClass.FullName}");
 
 				var instance = Activator.CreateInstance(testClass);
 
@@ -63,41 +58,43 @@ namespace Surity
 					var exec = executions[i];
 
 					string id = string.Join(" -> ", exec.Steps.Select(step => $"[{step.StepType.Name}] {step.Name}"));
-					this.DebugLog($"Running {exec.Name}: {id}");
+					DebugLog($"Running {exec.Name}: {id}");
 
-					yield return this.Run(instance, exec);
+					var testInfo = new TestInfo(testClass.Name, exec.Name);
 
 					// Skip BeforeAll and AfterAll executions
 					if (i > 0 && i < executions.Count - 1)
 					{
-						var result = new TestResult()
-						{
-							testCategory = testClass.Name,
-							testName = exec.Name,
-							pass = exec.Result.pass,
-							message = exec.Result.message
-						};
-						this.client.SendTestResult(result);
+						client.SendTestInfo(testInfo);
+					}
+
+					yield return Run(instance, exec);
+
+					if (i > 0 && i < executions.Count - 1)
+					{
+						client.SendTestResult(new TestResult(testInfo, exec.Result));
 					}
 				}
 			}
+
+			client.SendFinishMessage();
 		}
 
-		public IEnumerable<TestExecutionGroup> GetExecutionGroups(Type type)
+		private static IEnumerable<TestExecutionGroup> GetExecutionGroups(Type type)
 		{
 			var executions = new List<TestExecutionGroup>();
 
-			var testSteps = this.FindSteps<Test>(type);
+			var testSteps = FindSteps<Test>(type);
 
 			if (testSteps.Length == 0)
 			{
 				return executions;
 			}
 
-			var beforeEachSteps = this.FindSteps<BeforeEach>(type);
-			var afterEachSteps = this.FindSteps<AfterEach>(type);
-			var beforeAllSteps = this.FindSteps<BeforeAll>(type);
-			var afterAllSteps = this.FindSteps<AfterAll>(type);
+			var beforeEachSteps = FindSteps<BeforeEach>(type);
+			var afterEachSteps = FindSteps<AfterEach>(type);
+			var beforeAllSteps = FindSteps<BeforeAll>(type);
+			var afterAllSteps = FindSteps<AfterAll>(type);
 
 			executions.Add(new TestExecutionGroup("Before All", beforeAllSteps));
 
@@ -115,7 +112,7 @@ namespace Surity
 			return executions;
 		}
 
-		public IEnumerator Run(object instance, TestExecutionGroup execution)
+		private static IEnumerator Run(object instance, TestExecutionGroup execution)
 		{
 			foreach (var step in execution.Steps)
 			{
@@ -130,10 +127,9 @@ namespace Surity
 						{
 							moveNext = enumerator.MoveNext();
 						}
-						catch (Exception e)
+						catch (Exception ex)
 						{
-							this.DebugLog(e.ToString());
-							execution.Result = ExecutionResult.Fail(e.ToString());
+							execution.Result = ExecutionResult.Fail(ex);
 							yield break;
 						}
 
@@ -151,7 +147,7 @@ namespace Surity
 					}
 					catch (TargetInvocationException e)
 					{
-						execution.Result = ExecutionResult.Fail(e.GetBaseException().ToString());
+						execution.Result = ExecutionResult.Fail(e.GetBaseException());
 						yield break;
 					}
 				}
@@ -160,7 +156,7 @@ namespace Surity
 			execution.Result = ExecutionResult.Pass();
 		}
 
-		private TestStepInfo[] FindSteps<T>(Type testClassType) where T : Attribute
+		private static TestStepInfo[] FindSteps<T>(Type testClassType) where T : Attribute
 		{
 			return testClassType
 				.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
@@ -169,7 +165,7 @@ namespace Surity
 				.ToArray();
 		}
 
-		private Type[] GetTestClasses()
+		private static Type[] GetTestClasses()
 		{
 			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 			var types = new List<Type>();
@@ -201,7 +197,7 @@ namespace Surity
 			return types.Where(t => t.GetCustomAttribute<TestClass>()?.skip == false).ToArray();
 		}
 
-		private void DebugLog(string message)
+		private static void DebugLog(string message)
 		{
 			UnityEngine.Debug.Log($"[Surity] {message}");
 		}

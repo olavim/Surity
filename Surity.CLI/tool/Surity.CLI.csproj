@@ -1,14 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	<ItemGroup>
-		<ProjectReference Include="..\..\Surity.Core\Surity.Core.csproj" />
-		<Compile Include="..\src\**\*.cs" />
-	</ItemGroup>
-
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<PackAsTool>true</PackAsTool>
 		<ToolCommandName>surity</ToolCommandName>
-		<TargetFramework>netcoreapp3.1</TargetFramework>
-		<PublishDir>bin\$(Configuration)\$(TargetFramework)\publish</PublishDir>
+		<PublishDir>build\bin\$(Configuration)\$(TargetFramework)\publish</PublishDir>
 	</PropertyGroup>
 </Project>

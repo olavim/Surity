@@ -1,4 +1,5 @@
 ﻿using BepInEx;
+using System.Collections;
 
 namespace Surity
 {
@@ -13,8 +14,32 @@ namespace Surity
 		{
 			if (TestRunner.IsTestClient)
 			{
-				this.StartCoroutine(TestRunner.RunTestsAndExit());
+				this.StartCoroutine(this.RunTestsAndExit());
 			}
+		}
+
+		private IEnumerator RunTestsAndExit()
+		{
+			using (var client = new AdapterClient())
+			{
+				Debug.SetLogger(new DebugLogger(client));
+				yield return TestRunner.RunTestsAndExit(client);
+			}
+		}
+	}
+
+	internal class DebugLogger : ILogger
+	{
+		private readonly AdapterClient client;
+
+		public DebugLogger(AdapterClient client)
+		{
+			this.client = client;
+		}
+
+		public void Log(string message)
+		{
+			this.client.SendDebugMessage(message);
 		}
 	}
 }

@@ -1,8 +1,12 @@
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
+using System.Text;
 using System.Threading;
 
 namespace Surity
@@ -25,7 +29,7 @@ namespace Surity
 			this.connectionEvent = new ManualResetEvent(false);
 			this.receiveEvent = new ManualResetEvent(false);
 			this.listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-			this.listener.Bind(new IPEndPoint(IPAddress.Parse("127.0.0.1"), AdapterListener.LISTENER_PORT));
+			this.listener.Bind(new IPEndPoint(IPAddress.Parse("127.0.0.1"), LISTENER_PORT));
 			this.listener.Listen(1);
 		}
 
@@ -42,11 +46,11 @@ namespace Surity
 			}
 		}
 
-		public Message ReceiveMessage(WaitHandle cancelToken)
+		public IMessage ReceiveMessage(WaitHandle cancelToken)
 		{
 			if (this.connection == null)
 			{
-				return null;
+				return new FinishMessage("Connection closed");
 			}
 
 			this.receiveEvent.Reset();
@@ -62,7 +66,7 @@ namespace Surity
 			}
 			else
 			{
-				return null;
+				return new FinishMessage("Cancelled");
 			}
 
 			this.receiveBuffer.AddRange(buffer.Take(received));
@@ -76,7 +80,13 @@ namespace Surity
 			if (this.receiveLength > 0 && this.receiveBuffer.Count >= this.receiveLength)
 			{
 				var messageBytes = this.receiveBuffer.GetRange(0, this.receiveLength).ToArray();
-				var message = Message.Deserialize(messageBytes);
+				string messageJson = Encoding.UTF8.GetString(messageBytes);
+				var message = (IMessage) JsonConvert.DeserializeObject(messageJson, new JsonSerializerSettings
+				{
+					TypeNameHandling = TypeNameHandling.All,
+					ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
+					ContractResolver = new PrivateResolver()
+				});
 
 				this.receiveBuffer.RemoveRange(0, this.receiveLength);
 				this.receiveLength = 0;
@@ -100,6 +110,21 @@ namespace Surity
 		public void Dispose()
 		{
 			this.listener.Dispose();
+		}
+	}
+
+	// Allows deserializing into properties with private setters
+	public class PrivateResolver : DefaultContractResolver
+	{
+		protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+		{
+			var prop = base.CreateProperty(member, memberSerialization);
+			if (!prop.Writable)
+			{
+				var property = member as PropertyInfo;
+				prop.Writable = property?.GetSetMethod(true) != null;
+			}
+			return prop;
 		}
 	}
 }

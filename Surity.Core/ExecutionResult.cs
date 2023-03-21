@@ -1,5 +1,9 @@
+using Newtonsoft.Json;
+using System;
+
 namespace Surity
 {
+	[Serializable]
 	public sealed class ExecutionResult
 	{
 		public static ExecutionResult Pass()
@@ -7,20 +11,26 @@ namespace Surity
 			return new ExecutionResult(true);
 		}
 
-		public static ExecutionResult Fail(string message)
+		public static ExecutionResult Fail(Exception exception)
 		{
-			return new ExecutionResult(false, message);
+			return Fail(new TestError(exception));
+		}
+
+		public static ExecutionResult Fail(TestError error)
+		{
+			return new ExecutionResult(false, error);
 		}
 
 		public readonly bool pass;
-		public readonly string message;
+		public readonly TestError error;
 
 		private ExecutionResult(bool pass) : this(pass, null) { }
 
-		private ExecutionResult(bool pass, string failReason)
+		[JsonConstructor]
+		private ExecutionResult(bool pass, TestError error)
 		{
 			this.pass = pass;
-			this.message = failReason;
+			this.error = error;
 		}
 	}
 }

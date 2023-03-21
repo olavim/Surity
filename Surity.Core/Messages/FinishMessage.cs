@@ -1,10 +1,17 @@
-using System.IO;
+using Newtonsoft.Json;
+using System;
 
 namespace Surity
 {
-	public class FinishMessage : Message
+	[Serializable]
+	public class FinishMessage : IMessage
 	{
-		protected override byte[] Serialize() => new byte[] { };
-		protected override void Restore(BinaryReader reader) { }
+		public string reason;
+
+		[JsonConstructor]
+		public FinishMessage(string reason)
+		{
+			this.reason = reason;
+		}
 	}
 }
