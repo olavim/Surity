@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
 
 namespace Surity
 {
@@ -118,14 +119,28 @@ namespace Surity
 			{
 				if (step.MethodInfo.ReturnType == typeof(IEnumerator))
 				{
-					var enumerator = (IEnumerator) step.MethodInfo.Invoke(instance, new object[] { });
-					bool moveNext = true;
+					var enumerators = new Stack<IEnumerator>();
 
-					while (moveNext)
+					try
+					{
+						var enumerator = (IEnumerator) step.MethodInfo.Invoke(instance, new object[] { });
+						enumerators.Push(enumerator);
+					}
+					catch (TargetInvocationException e)
+					{
+						execution.Result = ExecutionResult.Fail(e.GetBaseException());
+						yield break;
+					}
+
+					while (enumerators.Count > 0)
 					{
 						try
 						{
-							moveNext = enumerator.MoveNext();
+							if (!enumerators.Peek().MoveNext())
+							{
+								enumerators.Pop();
+								continue;
+							}
 						}
 						catch (Exception ex)
 						{
@@ -133,10 +148,12 @@ namespace Surity
 							yield break;
 						}
 
-						if (moveNext)
+						if (enumerators.Peek().Current is IEnumerator innerEnumerator)
 						{
-							yield return enumerator.Current;
+							enumerators.Push(innerEnumerator);
 						}
+
+						yield return null;
 					}
 				}
 				else

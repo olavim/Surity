@@ -144,6 +144,11 @@ Examples:
 								finishReason = finishMessage.reason;
 								break;
 							}
+
+							if (message != null)
+							{
+								listener.SendMessage(new SyncMessage());
+							}
 						}
 					});
 

@@ -9,11 +9,13 @@ namespace Surity
 	public class AdapterClient : IDisposable
 	{
 		private readonly Socket socket;
+		private readonly MessageClient messageClient;
 
 		public AdapterClient()
 		{
 			this.socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 			this.socket.Connect(IPAddress.Parse("127.0.0.1"), AdapterListener.LISTENER_PORT);
+			this.messageClient = new MessageClient(this.socket);
 		}
 
 		public void SendTestInfo(TestInfo testInfo)
@@ -38,22 +40,8 @@ namespace Surity
 
 		public void SendMessage(IMessage message)
 		{
-			this.socket.Send(this.GetMessageBytes(message), SocketFlags.None);
-		}
-
-		private byte[] GetMessageBytes(IMessage message)
-		{
-			string messageJson = JsonConvert.SerializeObject(message, new JsonSerializerSettings
-			{
-				TypeNameHandling = TypeNameHandling.All
-			});
-			var messageBytes = Encoding.UTF8.GetBytes(messageJson);
-			var prefixBytes = BitConverter.GetBytes(messageBytes.Length);
-
-			var bytes = new byte[prefixBytes.Length + messageBytes.Length];
-			prefixBytes.CopyTo(bytes, 0);
-			messageBytes.CopyTo(bytes, prefixBytes.Length);
-			return bytes;
+			this.messageClient.SendMessage(message);
+			this.messageClient.ReceiveMessage();
 		}
 
 		public void Dispose()

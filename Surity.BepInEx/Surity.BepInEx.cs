@@ -1,5 +1,4 @@
 ﻿using BepInEx;
-using System.Collections;
 
 namespace Surity
 {
@@ -10,21 +9,22 @@ namespace Surity
 		public const string ModName = "Surity.BepInEx";
 		public const string ModVersion = ThisAssembly.Project.Version;
 
+		private AdapterClient client;
+
 		private void Start()
 		{
 			if (TestRunner.IsTestClient)
 			{
-				this.StartCoroutine(this.RunTestsAndExit());
+				this.client = new AdapterClient();
+				Debug.SetLogger(new DebugLogger(this.client));
+				this.StartCoroutine(TestRunner.RunTestsAndExit(this.client));
 			}
 		}
 
-		private IEnumerator RunTestsAndExit()
+		private void OnDisable()
 		{
-			using (var client = new AdapterClient())
-			{
-				Debug.SetLogger(new DebugLogger(client));
-				yield return TestRunner.RunTestsAndExit(client);
-			}
+			this.client?.SendFinishMessage();
+			this.client?.Dispose();
 		}
 	}
 
