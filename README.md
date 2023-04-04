@@ -1,6 +1,6 @@
-![Nuget](https://img.shields.io/nuget/v/Surity.Core?label=Surity.Core)
-![Nuget](https://img.shields.io/nuget/v/Surity.CLI?label=Surity.CLI)
-![Nuget](https://img.shields.io/nuget/v/Surity.BepInEx?label=Surity.BepInEx)
+[![Nuget](https://img.shields.io/nuget/v/Surity.Core?label=Surity.Core)](https://www.nuget.org/packages/Surity.Core)
+[![Nuget](https://img.shields.io/nuget/v/Surity.CLI?label=Surity.CLI)](https://www.nuget.org/packages/Surity.CLI)
+[![Nuget](https://img.shields.io/nuget/v/Surity.BepInEx?label=Surity.BepInEx)](https://www.nuget.org/packages/Surity.BepInEx)
 
 # Surity
 
