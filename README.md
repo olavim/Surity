@@ -1,3 +1,7 @@
+![Nuget](https://img.shields.io/nuget/v/Surity.Core?label=Surity.Core)
+![Nuget](https://img.shields.io/nuget/v/Surity.CLI?label=Surity.CLI)
+![Nuget](https://img.shields.io/nuget/v/Surity.BepInEx?label=Surity.BepInEx)
+
 # Surity
 
 Unit-testing framework for Unity mods.
@@ -7,9 +11,12 @@ Unit-testing framework for Unity mods.
 ```csharp
 using Surity;
 
-[TestClass]
+// Only test classes with Only = true are run
+// Test classes with Skip = true are skipped
+[TestClass(Only = false, Skip = false)]
 public class MyTests
 {
+	// BeforeAll, AfterAll, BeforeEach and AfterEach can be inherited
 	[BeforeAll]
 	public void SetUp()
 	{
@@ -34,7 +41,9 @@ public class MyTests
 		// Ran after each test in this class
 	}
 
-	[Test]
+	// Across all test classes, only tests with Only = true are run
+	// Tests with Skip = true are skipped
+	[Test(Only = false, Skip = false)]
 	public void TestSomething()
 	{
 		// Throw an error to fail. Use your favourite assertion library.
@@ -56,7 +65,7 @@ Run tests with the standalone [Surity.exe](https://github.com/olavim/Surity/rele
 
 ```
 $ dotnet tool install Surity.CLI
-$ dotnet surity <path-to-game-exe> [-- arguments]
+$ dotnet surity <path-to-game-exe> [options] [-- arguments]
 ```
 
 The program runs the game in [batchmode](https://docs.unity3d.com/Manual/PlayerCommandLineArguments.html) and listens for test results.

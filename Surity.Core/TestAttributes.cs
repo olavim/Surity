@@ -1,34 +1,74 @@
 using System;
+using System.Runtime.CompilerServices;
 
 namespace Surity
 {
-	[AttributeUsage(AttributeTargets.Class, Inherited = false)]
-	public class TestClass : Attribute
+	public interface IOrdered
 	{
-		public readonly bool skip;
-		public readonly bool only;
+		int Order { get; }
+	}
 
-		public TestClass() : this(false, false) { }
+	[AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
+	public sealed class TestClassAttribute : Attribute
+	{
+		public bool Skip { get; set; }
+		public bool Only { get; set; }
+	}
 
-		public TestClass(bool skip = false, bool only = false)
+	[AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
+	public sealed class TestAttribute : Attribute, IOrdered
+	{
+		public bool Skip { get; set; }
+		public bool Only { get; set; }
+		public int Order { get; }
+
+		public TestAttribute([CallerLineNumber] int order = 0)
 		{
-			this.skip = skip;
-			this.only = only;
+			this.Order = order;
 		}
 	}
 
-	[AttributeUsage(AttributeTargets.Method, Inherited = false)]
-	public class Test : Attribute { }
+	[AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
+	public sealed class BeforeEachAttribute : Attribute, IOrdered
+	{
+		public int Order { get; }
 
-	[AttributeUsage(AttributeTargets.Method, Inherited = false)]
-	public class BeforeEach : Attribute { }
+		public BeforeEachAttribute([CallerLineNumber] int order = 0)
+		{
+			this.Order = order;
+		}
+	}
 
-	[AttributeUsage(AttributeTargets.Method, Inherited = false)]
-	public class AfterEach : Attribute { }
+	[AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
+	public sealed class AfterEachAttribute : Attribute, IOrdered
+	{
+		public int Order { get; }
 
-	[AttributeUsage(AttributeTargets.Method, Inherited = false)]
-	public class BeforeAll : Attribute { }
+		public AfterEachAttribute([CallerLineNumber] int order = 0)
+		{
+			this.Order = order;
+		}
+	}
 
-	[AttributeUsage(AttributeTargets.Method, Inherited = false)]
-	public class AfterAll : Attribute { }
+	[AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
+	public sealed class BeforeAllAttribute : Attribute, IOrdered
+	{
+		public int Order { get; }
+
+		public BeforeAllAttribute([CallerLineNumber] int order = 0)
+		{
+			this.Order = order;
+		}
+	}
+
+	[AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
+	public sealed class AfterAllAttribute : Attribute, IOrdered
+	{
+		public int Order { get; }
+
+		public AfterAllAttribute([CallerLineNumber] int order = 0)
+		{
+			this.Order = order;
+		}
+	}
 }

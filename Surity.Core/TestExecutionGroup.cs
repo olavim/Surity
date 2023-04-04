@@ -9,6 +9,9 @@ namespace Surity
 		public IEnumerable<TestStepInfo> Steps { get; }
 		public ExecutionResult Result { get; set; }
 
+		internal bool Only { get; set; }
+		internal bool Skip { get; set; }
+
 		public TestExecutionGroup(string name, IEnumerable<TestStepInfo> steps)
 		{
 			this.Name = name;

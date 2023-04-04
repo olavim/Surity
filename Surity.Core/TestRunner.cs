@@ -9,6 +9,9 @@ namespace Surity
 {
 	public static class TestRunner
 	{
+		private const string BeforeAll = "$BeforeAll";
+		private const string AfterAll = "$AfterAll";
+
 		public static bool IsTestClient => Environment.GetCommandLineArgs().Any(arg => arg == "-runSurityTests");
 
 		public static IEnumerator RunTestsAndExit()
@@ -30,7 +33,7 @@ namespace Surity
 
 			var testClasses = GetTestClasses();
 
-			var testClassesWithOnly = testClasses.Where(t => t.GetCustomAttribute<TestClass>().only);
+			var testClassesWithOnly = testClasses.Where(t => t.GetCustomAttribute<TestClassAttribute>().Only);
 
 			if (testClassesWithOnly.Any())
 			{
@@ -39,17 +42,31 @@ namespace Surity
 
 			DebugLog($"Found {testClasses.Length} test classes");
 
+			var testClassExecutionGroupPairs = new List<(Type, TestExecutionGroup)>();
+
 			foreach (var testClass in testClasses)
 			{
 				var executions = GetExecutionGroups(testClass).ToList();
+				testClassExecutionGroupPairs.AddRange(executions.Select(exec => (testClass, exec)));
+			}
 
+			if (testClassExecutionGroupPairs.Any(p => p.Item2.Only))
+			{
+				var forcedExecutions = new[] { BeforeAll, AfterAll };
+				testClassExecutionGroupPairs = testClassExecutionGroupPairs.Where(p => p.Item2.Only || forcedExecutions.Contains(p.Item2.Name)).ToList();
+			}
+
+			testClassExecutionGroupPairs = testClassExecutionGroupPairs.Where(p => !p.Item2.Skip).ToList();
+
+			var executionsByTestClass = testClassExecutionGroupPairs.GroupBy(
+				p => p.Item1,
+				p => p.Item2,
+				(testClass, executions) => (testClass, executions.ToList())
+			);
+
+			foreach (var (testClass, executions) in executionsByTestClass)
+			{
 				DebugLog($"Test class {testClass.FullName} has {executions.Count} execution groups");
-
-				if (executions.Count == 0)
-				{
-					continue;
-				}
-
 				DebugLog($"Running {executions.Count - 2} tests in {testClass.FullName}");
 
 				var instance = Activator.CreateInstance(testClass);
@@ -58,7 +75,7 @@ namespace Surity
 				{
 					var exec = executions[i];
 
-					string id = string.Join(" -> ", exec.Steps.Select(step => $"[{step.StepType.Name}] {step.Name}"));
+					string id = string.Join(" -> ", exec.Steps.Select(step => $"[{step.StepType.Name.Replace("Attribute", "")}] {step.Name}"));
 					DebugLog($"Running {exec.Name}: {id}");
 
 					var testInfo = new TestInfo(testClass.Name, exec.Name);
@@ -85,30 +102,31 @@ namespace Surity
 		{
 			var executions = new List<TestExecutionGroup>();
 
-			var testSteps = FindSteps<Test>(type);
+			var testSteps = FindOrderedSteps<TestAttribute>(type);
 
 			if (testSteps.Length == 0)
 			{
 				return executions;
 			}
 
-			var beforeEachSteps = FindSteps<BeforeEach>(type);
-			var afterEachSteps = FindSteps<AfterEach>(type);
-			var beforeAllSteps = FindSteps<BeforeAll>(type);
-			var afterAllSteps = FindSteps<AfterAll>(type);
+			var beforeEachSteps = FindOrderedSteps<BeforeEachAttribute>(type);
+			var afterEachSteps = FindOrderedSteps<AfterEachAttribute>(type);
+			var beforeAllSteps = FindOrderedSteps<BeforeAllAttribute>(type);
+			var afterAllSteps = FindOrderedSteps<AfterAllAttribute>(type);
 
-			executions.Add(new TestExecutionGroup("Before All", beforeAllSteps));
+			executions.Add(new TestExecutionGroup(BeforeAll, beforeAllSteps));
 
 			foreach (var testStep in testSteps)
 			{
+				var testAttribute = testStep.MethodInfo.GetCustomAttribute<TestAttribute>();
 				var steps = new List<TestStepInfo>();
 				steps.AddRange(beforeEachSteps);
 				steps.Add(testStep);
 				steps.AddRange(afterEachSteps);
-				executions.Add(new TestExecutionGroup(testStep.Name, steps));
+				executions.Add(new TestExecutionGroup(testStep.Name, steps) { Only = testAttribute.Only, Skip = testAttribute.Skip });
 			}
 
-			executions.Add(new TestExecutionGroup("After All", afterAllSteps));
+			executions.Add(new TestExecutionGroup(AfterAll, afterAllSteps));
 
 			return executions;
 		}
@@ -173,11 +191,27 @@ namespace Surity
 			execution.Result = ExecutionResult.Pass();
 		}
 
-		private static TestStepInfo[] FindSteps<T>(Type testClassType) where T : Attribute
+		private static TestStepInfo[] FindOrderedSteps<T>(Type testClassType) where T : Attribute, IOrdered
 		{
-			return testClassType
-				.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-				.Where(m => m.GetCustomAttributes<T>().Any())
+			var methodsByDepth = new Dictionary<int, List<MethodInfo>>();
+
+			int currentDepth = 0;
+			var currentType = testClassType;
+			while (currentType != null)
+			{
+				methodsByDepth[currentDepth] = currentType
+					.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+					.Where(m => m.GetCustomAttribute<T>() != null)
+					.OrderBy(m => m.GetCustomAttribute<T>().Order)
+					.ToList();
+
+				currentType = currentType.BaseType;
+				currentDepth++;
+			}
+
+			return methodsByDepth.Keys
+				.OrderByDescending(k => k)
+				.SelectMany(k => methodsByDepth[k])
 				.Select(m => new TestStepInfo(typeof(T), m.Name, testClassType, m))
 				.ToArray();
 		}
@@ -211,7 +245,7 @@ namespace Surity
 				}
 			}
 
-			return types.Where(t => t.GetCustomAttribute<TestClass>()?.skip == false).ToArray();
+			return types.Where(t => t.GetCustomAttribute<TestClassAttribute>()?.Skip == false).ToArray();
 		}
 
 		private static void DebugLog(string message)
