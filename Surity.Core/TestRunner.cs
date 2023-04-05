@@ -180,9 +180,11 @@ namespace Surity
 					{
 						step.MethodInfo.Invoke(instance, new object[] { });
 					}
-					catch (TargetInvocationException e)
+					catch (Exception ex)
 					{
-						execution.Result = ExecutionResult.Fail(e.GetBaseException());
+						execution.Result = ex is TargetInvocationException invocationException
+							? ExecutionResult.Fail(invocationException.GetBaseException())
+							: ExecutionResult.Fail(ex);
 						yield break;
 					}
 				}
