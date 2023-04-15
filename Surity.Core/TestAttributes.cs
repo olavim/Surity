@@ -28,6 +28,19 @@ namespace Surity
 		}
 	}
 
+	[AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
+	public sealed class TestGeneratorAttribute : Attribute, IOrdered
+	{
+		public bool Skip { get; set; }
+		public bool Only { get; set; }
+		public int Order { get; }
+
+		public TestGeneratorAttribute([CallerLineNumber] int order = 0)
+		{
+			this.Order = order;
+		}
+	}
+
 	[AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
 	public sealed class BeforeEachAttribute : Attribute, IOrdered
 	{

@@ -10,9 +10,10 @@ Unit-testing framework for Unity mods.
 
 ```csharp
 using Surity;
+using System.Collections.Generic;
 
-// Only test classes with Only = true are run
-// Test classes with Skip = true are skipped
+// Only test classes with Only = true are run.
+// Test classes with Skip = true are skipped.
 [TestClass(Only = false, Skip = false)]
 public class MyTests
 {
@@ -41,12 +42,36 @@ public class MyTests
 		// Ran after each test in this class
 	}
 
-	// Across all test classes, only tests with Only = true are run
-	// Tests with Skip = true are skipped
+	// Across all test classes, only tests with Only = true are run.
+	// Tests with Skip = true are skipped.
 	[Test(Only = false, Skip = false)]
 	public void TestSomething()
 	{
-		// Throw an error to fail. Use your favourite assertion library.
+		// Throw an error to fail. Use your favourite assertion library
+	}
+
+	// Tests and setup methods (BeforeEach, AfterEach, etc.) can also return IEnumerator
+	[Test]
+	public IEnumerator TestSomething()
+	{
+		yield break;
+	}
+
+	// Tests can be generated programmatically. Just return the generated tests.
+	// `Only` and `Skip` apply to generated tests.
+	[TestGenerator(Only = false, Skip = false)]
+	public IEnumerable<TestInfo> GenerateTests()
+	{
+		void Func1(int num) {
+			// Works like normal tests
+		}
+
+		IEnumerator Func2(int num) {
+			// Generated tests can also return IEnumerator, as you would expect
+		}
+
+		yield return new TestInfo("Name of test1", () => Func1(1));
+		yield return new TestInfo("Name of test2", () => Func2(2));
 	}
 }
 ```

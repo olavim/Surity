@@ -20,7 +20,7 @@ namespace Surity
 			this.Name = method.Name + (method.GenericArguments ?? string.Empty);
 			this.DeclaringType = new TypeDetails(method.DeclaringType);
 			this.ReturnType = method.ReturnParameter == null ? null : new TypeDetails(method.ReturnParameter.ResolvedType);
-			this.Parameters = method.MethodBase.GetParameters().Length > 0
+			this.Parameters = method.MethodBase?.GetParameters().Length > 0
 				? method.Parameters.Select(p => new ParameterDetails(p)).ToArray()
 				: null;
 			this.IsAsync = method.IsAsync;

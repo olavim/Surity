@@ -107,26 +107,24 @@ Examples:
 
 							if (message is TestInfoMessage infoMessage)
 							{
-								var testInfo = infoMessage.info;
-								ctx.Status($"Running test: [grey]{testInfo.category} \u203A {testInfo.name}[/]");
+								ctx.Status($"Running test: [grey]{infoMessage.category} \u203A {infoMessage.name}[/]");
 							}
 
 							if (message is TestResultMessage resultMessage)
 							{
 								var result = resultMessage.result;
-								var testInfo = result.testInfo;
 								testResults.Add(result);
 
-								if (testInfo.category != category)
+								if (result.testCategory != category)
 								{
-									category = testInfo.category;
+									category = result.testCategory;
 									AnsiConsole.WriteLine();
-									AnsiConsole.WriteLine(testInfo.category);
+									AnsiConsole.WriteLine(category);
 									AnsiConsole.WriteLine();
 								}
 
 								string check = result.result.pass ? "[lime]\u221A[/] " : "[red]X[/] ";
-								AnsiConsole.MarkupLine($"    {check}[grey]{{0}}[/]", Markup.Escape(testInfo.name));
+								AnsiConsole.MarkupLine($"    {check}[grey]{{0}}[/]", Markup.Escape(result.testName));
 
 								if (!result.result.pass)
 								{
@@ -154,8 +152,7 @@ Examples:
 
 				foreach (var failedResult in failedTestResults)
 				{
-					var testInfo = failedResult.testInfo;
-					AnsiConsole.MarkupLineInterpolated($"\n[red]{testInfo.category} \u203A {testInfo.name}[/]\n");
+					AnsiConsole.MarkupLineInterpolated($"\n[red]{failedResult.testCategory} \u203A {failedResult.testName}[/]\n");
 					StackTraceFormatter.PrintStackTrace(failedResult.result.error, settings.StackTraceFilter, settings.CompactStackTraces);
 				}
 
@@ -189,7 +186,7 @@ Examples:
 
 		private void PrintSummary(List<TestResult> results)
 		{
-			var groups = results.GroupBy(r => r.testInfo.category);
+			var groups = results.GroupBy(r => r.testCategory);
 			int passedCategoryCount = groups.Count(g => g.All(result => result.result.pass));
 			int failedCategoryCount = groups.Count() - passedCategoryCount;
 			int passedTestCount = results.Count(r => r.result.pass);

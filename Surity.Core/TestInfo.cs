@@ -1,17 +1,27 @@
 using System;
+using System.Collections;
+using System.Reflection;
 
 namespace Surity
 {
-	[Serializable]
 	public class TestInfo
 	{
-		public string category;
-		public string name;
+		public string Name { get; }
+		internal MethodInfo MethodInfo { get; }
+		internal object MethodTarget { get; }
 
-		public TestInfo(string category, string name)
+		public TestInfo(string name, Action func)
 		{
-			this.category = category;
-			this.name = name;
+			this.Name = name;
+			this.MethodInfo = func.Method;
+			this.MethodTarget = func.Target;
+		}
+
+		public TestInfo(string name, Func<IEnumerator> func)
+		{
+			this.Name = name;
+			this.MethodInfo = func.Method;
+			this.MethodTarget = func.Target;
 		}
 	}
 }

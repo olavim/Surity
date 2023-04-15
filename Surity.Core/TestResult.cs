@@ -5,12 +5,14 @@ namespace Surity
 	[Serializable]
 	public class TestResult
 	{
-		public TestInfo testInfo;
+		public string testName;
+		public string testCategory;
 		public ExecutionResult result;
 
-		public TestResult(TestInfo testInfo, ExecutionResult result)
+		public TestResult(string testName, string testCategory, ExecutionResult result)
 		{
-			this.testInfo = testInfo;
+			this.testName = testName;
+			this.testCategory = testCategory;
 			this.result = result;
 		}
 	}

@@ -1,8 +1,6 @@
-using Newtonsoft.Json;
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
 namespace Surity
 {
@@ -18,9 +16,9 @@ namespace Surity
 			this.messageClient = new MessageClient(this.socket);
 		}
 
-		public void SendTestInfo(TestInfo testInfo)
+		public void SendTestInfo(string name, string category)
 		{
-			this.SendMessage(new TestInfoMessage(testInfo));
+			this.SendMessage(new TestInfoMessage(name, category));
 		}
 
 		public void SendTestResult(TestResult result)
@@ -33,9 +31,9 @@ namespace Surity
 			this.SendMessage(new DebugMessage(message));
 		}
 
-		public void SendFinishMessage()
+		public void SendFinishMessage(string message = "Test run finished")
 		{
-			this.SendMessage(new FinishMessage("Test run finished"));
+			this.SendMessage(new FinishMessage(message));
 		}
 
 		public void SendMessage(IMessage message)

@@ -6,12 +6,14 @@ namespace Surity
 	[Serializable]
 	public class TestInfoMessage : IMessage
 	{
-		public TestInfo info;
+		public string category;
+		public string name;
 
 		[JsonConstructor]
-		public TestInfoMessage(TestInfo info)
+		public TestInfoMessage(string category, string name)
 		{
-			this.info = info;
+			this.category = category;
+			this.name = name;
 		}
 	}
 }
