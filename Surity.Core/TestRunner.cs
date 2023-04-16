@@ -30,7 +30,6 @@ namespace Surity
 		{
 			DebugLog("Test discovery started");
 			IEnumerable<(Type, List<TestExecutionGroup>)> executionsByTestClass;
-			var testClassInstances = new Dictionary<Type, object>();
 
 			try
 			{
@@ -49,8 +48,7 @@ namespace Surity
 
 				foreach (var testClass in testClasses)
 				{
-					testClassInstances[testClass] = Activator.CreateInstance(testClass);
-					var executions = GetExecutionGroups(testClass, testClassInstances[testClass]).ToList();
+					var executions = GetExecutionGroups(testClass).ToList();
 					testClassExecutionGroupPairs.AddRange(executions.Select(exec => (testClass, exec)));
 				}
 
@@ -74,29 +72,44 @@ namespace Surity
 				yield break;
 			}
 
+			IEnumerator Execute(TestExecutionGroup exec, object testClassInstance, bool sendResult)
+			{
+				string id = string.Join(" -> ", exec.Steps.Select(step => $"[{step.StepType.Name.Replace("Attribute", "")}] {step.Name}"));
+				DebugLog($"Running {exec.Name}: {id}");
+
+				string testClassName = testClassInstance.GetType().Name;
+
+				// Skip BeforeAll and AfterAll executions
+				if (sendResult)
+				{
+					client.SendTestInfo(exec.Name, testClassName);
+				}
+
+				yield return Run(testClassInstance, exec);
+
+				if (sendResult)
+				{
+					client.SendTestResult(new TestResult(exec.Name, testClassName, exec.Result));
+				}
+			}
+
 			foreach (var (testClass, executions) in executionsByTestClass)
 			{
 				DebugLog($"Test class {testClass.FullName} has {executions.Count} execution groups");
 				DebugLog($"Running {executions.Count - 2} tests in {testClass.FullName}");
 
-				for (int i = 0; i < executions.Count; i++)
+				var instance = Activator.CreateInstance(testClass);
+
+				foreach (var exec in executions)
 				{
-					var exec = executions[i];
+					yield return Execute(exec, instance, exec != executions[0] && exec != executions.Last());
 
-					string id = string.Join(" -> ", exec.Steps.Select(step => $"[{step.StepType.Name.Replace("Attribute", "")}] {step.Name}"));
-					DebugLog($"Running {exec.Name}: {id}");
-
-					// Skip BeforeAll and AfterAll executions
-					if (i > 0 && i < executions.Count - 1)
+					if (exec.Result.pass && exec.GeneratedExecutions != null)
 					{
-						client.SendTestInfo(exec.Name, testClass.Name);
-					}
-
-					yield return Run(testClassInstances[testClass], exec);
-
-					if (i > 0 && i < executions.Count - 1)
-					{
-						client.SendTestResult(new TestResult(exec.Name, testClass.Name, exec.Result));
+						foreach (var generatedExec in exec.GeneratedExecutions)
+						{
+							yield return Execute(generatedExec, instance, true);
+						}
 					}
 				}
 			}
@@ -104,27 +117,17 @@ namespace Surity
 			client.SendFinishMessage();
 		}
 
-		private static IEnumerable<TestExecutionGroup> GetExecutionGroups(Type type, object instance)
+		private static IEnumerable<TestExecutionGroup> GetExecutionGroups(Type type)
 		{
-			var executions = new List<TestExecutionGroup>();
+			var execGroups = new List<TestExecutionGroup>();
 			var testSteps = new List<TestStepInfo>();
 
-			foreach (var testGenerator in FindOrderedSteps<TestGeneratorAttribute>(type))
-			{
-				if (testGenerator.MethodInfo.ReturnType != typeof(IEnumerable<TestInfo>))
-				{
-					throw new Exception($"Test generator {testGenerator.Name} must return IEnumerable<TestStepInfo>");
-				}
-
-				var generatedSteps = (IEnumerable<TestInfo>) testGenerator.MethodInfo.Invoke(instance, new object[] { });
-				testSteps.AddRange(generatedSteps.Select(generatedStep => new TestStepInfo(generatedStep, testGenerator)));
-			}
-
 			testSteps.AddRange(FindOrderedSteps<TestAttribute>(type));
+			testSteps.AddRange(FindOrderedSteps<TestGeneratorAttribute>(type));
 
 			if (testSteps.Count == 0)
 			{
-				return executions;
+				return execGroups;
 			}
 
 			testSteps.Sort((a, b) => a.Order.CompareTo(b.Order));
@@ -134,13 +137,12 @@ namespace Surity
 			var beforeAllSteps = FindOrderedSteps<BeforeAllAttribute>(type).OrderBy(step => step.Order);
 			var afterAllSteps = FindOrderedSteps<AfterAllAttribute>(type).OrderBy(step => step.Order);
 
-			executions.Add(new TestExecutionGroup(BeforeAll, beforeAllSteps));
+			execGroups.Add(new TestExecutionGroup(BeforeAll, beforeAllSteps));
 
 			foreach (var step in testSteps)
 			{
-				var baseStep = step.Generator ?? step;
-				var testAttribute = baseStep.MethodInfo.GetCustomAttribute<TestAttribute>();
-				var testGeneratorAttribute = baseStep.MethodInfo.GetCustomAttribute<TestGeneratorAttribute>();
+				var testAttribute = step.MethodInfo.GetCustomAttribute<TestAttribute>();
+				var testGeneratorAttribute = step.MethodInfo.GetCustomAttribute<TestGeneratorAttribute>();
 				bool only = testAttribute?.Only ?? testGeneratorAttribute?.Only ?? false;
 				bool skip = testAttribute?.Skip ?? testGeneratorAttribute?.Skip ?? false;
 
@@ -148,21 +150,51 @@ namespace Surity
 				steps.AddRange(beforeEachSteps);
 				steps.Add(step);
 				steps.AddRange(afterEachSteps);
-				executions.Add(new TestExecutionGroup(step.Name, steps) { Only = only, Skip = skip });
+				execGroups.Add(new TestExecutionGroup(step.Name, steps) { Only = only, Skip = skip });
 			}
 
-			executions.Add(new TestExecutionGroup(AfterAll, afterAllSteps));
+			execGroups.Add(new TestExecutionGroup(AfterAll, afterAllSteps));
 
-			return executions;
+			return execGroups;
 		}
 
 		private static IEnumerator Run(object instance, TestExecutionGroup execution)
 		{
-			foreach (var step in execution.Steps)
+			var steps = execution.Steps.ToArray();
+			for (int i = 0; i < steps.Length; i++)
 			{
+				var step = steps[i];
 				var methodTarget = step.MethodTarget ?? instance;
 
-				if (step.MethodInfo.ReturnType == typeof(IEnumerator))
+				if (step.StepType == typeof(TestGeneratorAttribute))
+				{
+					if (step.MethodInfo.ReturnType != typeof(IEnumerable<TestInfo>))
+					{
+						var error = new Exception($"Test generator {step.Name} must return IEnumerable<TestStepInfo>");
+						execution.Result = ExecutionResult.Fail(error);
+						yield break;
+					}
+
+					IEnumerable<TestInfo> generatedInfos;
+
+					try
+					{
+						generatedInfos = (IEnumerable<TestInfo>) step.MethodInfo.Invoke(methodTarget, new object[] { });
+					}
+					catch (TargetInvocationException e)
+					{
+						execution.Result = ExecutionResult.Fail(e.GetBaseException());
+						yield break;
+					}
+
+					execution.GeneratedExecutions = generatedInfos.Select(info =>
+						new TestExecutionGroup(
+							info.Name,
+							new List<TestStepInfo>(execution.Steps) { [i] = new TestStepInfo(info, step) }
+						)
+					).ToList();
+				}
+				else if (step.MethodInfo.ReturnType == typeof(IEnumerator))
 				{
 					var enumerators = new Stack<IEnumerator>();
 

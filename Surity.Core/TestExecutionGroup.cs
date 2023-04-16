@@ -8,6 +8,7 @@ namespace Surity
 		public string Name { get; }
 		public IEnumerable<TestStepInfo> Steps { get; }
 		public ExecutionResult Result { get; set; }
+		public IEnumerable<TestExecutionGroup> GeneratedExecutions { get; set; }
 
 		public bool Only { get; set; }
 		public bool Skip { get; set; }
