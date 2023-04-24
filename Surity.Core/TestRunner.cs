@@ -104,7 +104,7 @@ namespace Surity
 				{
 					yield return Execute(exec, instance, exec != executions[0] && exec != executions.Last());
 
-					if (exec.Result.pass && exec.GeneratedExecutions != null)
+					if (exec.Result.IsPass && exec.GeneratedExecutions != null)
 					{
 						foreach (var generatedExec in exec.GeneratedExecutions)
 						{

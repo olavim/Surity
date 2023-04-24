@@ -107,26 +107,26 @@ Examples:
 
 							if (message is TestInfoMessage infoMessage)
 							{
-								ctx.Status($"Running test: [grey]{infoMessage.category} \u203A {infoMessage.name}[/]");
+								ctx.Status($"Running test: [grey]{infoMessage.Category} \u203A {infoMessage.Name}[/]");
 							}
 
 							if (message is TestResultMessage resultMessage)
 							{
-								var result = resultMessage.result;
+								var result = resultMessage.Result;
 								testResults.Add(result);
 
-								if (result.testCategory != category)
+								if (result.TestCategory != category)
 								{
-									category = result.testCategory;
+									category = result.TestCategory;
 									AnsiConsole.WriteLine();
 									AnsiConsole.WriteLine(category);
 									AnsiConsole.WriteLine();
 								}
 
-								string check = result.result.pass ? "[lime]\u221A[/] " : "[red]X[/] ";
-								AnsiConsole.MarkupLine($"    {check}[grey]{{0}}[/]", Markup.Escape(result.testName));
+								string check = result.Result.IsPass ? "[lime]\u221A[/] " : "[red]X[/] ";
+								AnsiConsole.MarkupLine($"    {check}[grey]{{0}}[/]", Markup.Escape(result.TestName));
 
-								if (!result.result.pass)
+								if (!result.Result.IsPass)
 								{
 									failedTestResults.Add(result);
 								}
@@ -134,12 +134,12 @@ Examples:
 
 							if (message is DebugMessage debugMessage)
 							{
-								Debug.Log(debugMessage.message);
+								Debug.Log(debugMessage.Message);
 							}
 
 							if (message is FinishMessage finishMessage)
 							{
-								finishReason = finishMessage.reason;
+								finishReason = finishMessage.Reason;
 								break;
 							}
 
@@ -152,8 +152,8 @@ Examples:
 
 				foreach (var failedResult in failedTestResults)
 				{
-					AnsiConsole.MarkupLineInterpolated($"\n[red]{failedResult.testCategory} \u203A {failedResult.testName}[/]\n");
-					StackTraceFormatter.PrintStackTrace(failedResult.result.error, settings.StackTraceFilter, settings.CompactStackTraces);
+					AnsiConsole.MarkupLineInterpolated($"\n[red]{failedResult.TestCategory} \u203A {failedResult.TestName}[/]\n");
+					StackTraceFormatter.PrintStackTrace(failedResult.Result.Error, settings.StackTraceFilter, settings.CompactStackTraces);
 				}
 
 				this.PrintSummary(testResults);
@@ -186,10 +186,10 @@ Examples:
 
 		private void PrintSummary(List<TestResult> results)
 		{
-			var groups = results.GroupBy(r => r.testCategory);
-			int passedCategoryCount = groups.Count(g => g.All(result => result.result.pass));
+			var groups = results.GroupBy(r => r.TestCategory);
+			int passedCategoryCount = groups.Count(g => g.All(result => result.Result.IsPass));
 			int failedCategoryCount = groups.Count() - passedCategoryCount;
-			int passedTestCount = results.Count(r => r.result.pass);
+			int passedTestCount = results.Count(r => r.Result.IsPass);
 			int failedTestCount = results.Count - passedTestCount;
 
 			AnsiConsole.Write("\nTest Classes: ");

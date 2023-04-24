@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -8,10 +7,10 @@ namespace Surity
 	[Serializable]
 	public class TestError
 	{
-		public string Name { get; protected set; }
-		public string Message { get; protected set; }
-		public TestError InnerError { get; protected set; }
-		public StackFrameInfo[] StackFrames { get; protected set; }
+		public string Name { get; set; }
+		public string Message { get; set; }
+		public TestError InnerError { get; set; }
+		public StackFrameInfo[] StackFrames { get; set; }
 
 		public TestError(Exception exception)
 		{
@@ -25,7 +24,6 @@ namespace Surity
 			this.StackFrames = stackTrace.GetFrames().Select(f => new StackFrameInfo((EnhancedStackFrame) f)).ToArray();
 		}
 
-		[JsonConstructor]
 		private TestError() { }
 	}
 }

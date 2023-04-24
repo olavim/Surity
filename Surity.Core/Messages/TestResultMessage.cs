@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using System;
 
 namespace Surity
@@ -6,12 +5,13 @@ namespace Surity
 	[Serializable]
 	public class TestResultMessage : IMessage
 	{
-		public TestResult result;
+		public TestResult Result { get; set; }
 
-		[JsonConstructor]
 		public TestResultMessage(TestResult result)
 		{
-			this.result = result;
+			this.Result = result;
 		}
+
+		private TestResultMessage() { }
 	}
 }

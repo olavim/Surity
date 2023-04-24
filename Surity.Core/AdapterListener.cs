@@ -1,5 +1,3 @@
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -64,21 +62,6 @@ namespace Surity
 		public void Dispose()
 		{
 			this.listener.Dispose();
-		}
-	}
-
-	// Allows deserializing into properties with private setters
-	public class PrivateResolver : DefaultContractResolver
-	{
-		protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
-		{
-			var prop = base.CreateProperty(member, memberSerialization);
-			if (!prop.Writable)
-			{
-				var property = member as PropertyInfo;
-				prop.Writable = property?.GetSetMethod(true) != null;
-			}
-			return prop;
 		}
 	}
 }

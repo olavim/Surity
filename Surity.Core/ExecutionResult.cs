@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using System;
 
 namespace Surity
@@ -21,16 +20,17 @@ namespace Surity
 			return new ExecutionResult(false, error);
 		}
 
-		public readonly bool pass;
-		public readonly TestError error;
+		public bool IsPass { get; set; }
+		public TestError Error { get; set; }
 
 		private ExecutionResult(bool pass) : this(pass, null) { }
 
-		[JsonConstructor]
 		private ExecutionResult(bool pass, TestError error)
 		{
-			this.pass = pass;
-			this.error = error;
+			this.IsPass = pass;
+			this.Error = error;
 		}
+
+		private ExecutionResult() { }
 	}
 }

@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -9,10 +8,10 @@ namespace Surity
 	[Serializable]
 	public class TypeDetails
 	{
-		public string Namespace { get; protected set; }
-		public string Name { get; protected set; }
-		public string FullName { get; protected set; }
-		public TypeDetails[] GenericArguments { get; protected set; }
+		public string Namespace { get; set; }
+		public string Name { get; set; }
+		public string FullName { get; set; }
+		public TypeDetails[] GenericArguments { get; set; }
 
 		public TypeDetails(Type type)
 		{
@@ -29,7 +28,6 @@ namespace Surity
 			this.GenericArguments = type.GenericTypeArguments.Select(t => new TypeDetails(t)).ToArray();
 		}
 
-		[JsonConstructor]
 		private TypeDetails() { }
 
 		public string GetDisplayName(bool fullName = false)

@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
 
@@ -7,9 +6,9 @@ namespace Surity
 	[Serializable]
 	public class ParameterDetails
 	{
-		public string Prefix { get; protected set; }
-		public TypeDetails Type { get; protected set; }
-		public string Name { get; protected set; }
+		public string Prefix { get; set; }
+		public TypeDetails Type { get; set; }
+		public string Name { get; set; }
 
 		public ParameterDetails(ResolvedParameter param)
 		{
@@ -18,7 +17,6 @@ namespace Surity
 			this.Name = param.Name ?? string.Empty;
 		}
 
-		[JsonConstructor]
 		private ParameterDetails() { }
 	}
 }

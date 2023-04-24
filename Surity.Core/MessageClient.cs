@@ -1,10 +1,11 @@
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Xml.Serialization;
 
 namespace Surity
 {
@@ -14,7 +15,8 @@ namespace Surity
 		private readonly ManualResetEvent receiveEvent;
 		private readonly List<byte> receiveBuffer = new List<byte>();
 
-		private int receiveLength;
+		private int typeLength;
+		private int messageLength;
 
 		public MessageClient(Socket socket)
 		{
@@ -50,25 +52,25 @@ namespace Surity
 
 			this.receiveBuffer.AddRange(buffer.Take(received));
 
-			if (this.receiveLength == 0 && this.receiveBuffer.Count >= 4)
+			if (this.typeLength == 0 && this.receiveBuffer.Count >= 8)
 			{
-				this.receiveLength = BitConverter.ToInt32(this.receiveBuffer.GetRange(0, 4).ToArray(), 0);
-				this.receiveBuffer.RemoveRange(0, 4);
+				this.typeLength = BitConverter.ToInt32(this.receiveBuffer.ToArray(), 0);
+				this.messageLength = BitConverter.ToInt32(this.receiveBuffer.ToArray(), 4);
+				this.receiveBuffer.RemoveRange(0, 8);
 			}
 
-			if (this.receiveLength > 0 && this.receiveBuffer.Count >= this.receiveLength)
+			if (this.typeLength > 0 && this.receiveBuffer.Count >= this.typeLength + this.messageLength)
 			{
-				var messageBytes = this.receiveBuffer.GetRange(0, this.receiveLength).ToArray();
-				string messageJson = Encoding.UTF8.GetString(messageBytes);
-				var message = (IMessage) JsonConvert.DeserializeObject(messageJson, new JsonSerializerSettings
-				{
-					TypeNameHandling = TypeNameHandling.All,
-					ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
-					ContractResolver = new PrivateResolver()
-				});
+				var typeBytes = this.receiveBuffer.GetRange(0, this.typeLength).ToArray();
+				var messageBytes = this.receiveBuffer.GetRange(this.typeLength, this.messageLength).ToArray();
 
-				this.receiveBuffer.RemoveRange(0, this.receiveLength);
-				this.receiveLength = 0;
+				var type = Type.GetType(Encoding.UTF8.GetString(typeBytes));
+				var serializer = new XmlSerializer(type);
+				var message = (IMessage) serializer.Deserialize(new MemoryStream(messageBytes));
+
+				this.receiveBuffer.RemoveRange(0, this.typeLength + this.messageLength);
+				this.typeLength = 0;
+				this.messageLength = 0;
 
 				return message;
 			}
@@ -83,17 +85,36 @@ namespace Surity
 
 		private byte[] GetMessageBytes(IMessage message)
 		{
-			string messageJson = JsonConvert.SerializeObject(message, new JsonSerializerSettings
-			{
-				TypeNameHandling = TypeNameHandling.All
-			});
-			var messageBytes = Encoding.UTF8.GetBytes(messageJson);
-			var prefixBytes = BitConverter.GetBytes(messageBytes.Length);
+			var typeBytes = Encoding.UTF8.GetBytes(message.GetType().FullName);
+			var typePrefixBytes = BitConverter.GetBytes(typeBytes.Length);
+			var messageBytes = this.GetXmlBytes(message);
+			var messagePrefixBytes = BitConverter.GetBytes(messageBytes.Length);
 
-			var bytes = new byte[prefixBytes.Length + messageBytes.Length];
-			prefixBytes.CopyTo(bytes, 0);
-			messageBytes.CopyTo(bytes, prefixBytes.Length);
+			int totalBytes = typePrefixBytes.Length + messagePrefixBytes.Length + typeBytes.Length + messageBytes.Length;
+			int messagePrefixIndex = typePrefixBytes.Length;
+			int typeIndex = messagePrefixIndex + messagePrefixBytes.Length;
+			int messageIndex = typeIndex + typeBytes.Length;
+
+			var bytes = new byte[totalBytes];
+			typePrefixBytes.CopyTo(bytes, 0);
+			messagePrefixBytes.CopyTo(bytes, messagePrefixIndex);
+			typeBytes.CopyTo(bytes, typeIndex);
+			messageBytes.CopyTo(bytes, messageIndex);
 			return bytes;
+		}
+
+		private byte[] GetXmlBytes(IMessage message)
+		{
+			var serializer = new XmlSerializer(message.GetType());
+			using (var stream = new MemoryStream())
+			{
+				using (var writer = new StreamWriter(stream))
+				{
+					serializer.Serialize(writer, message);
+				}
+
+				return stream.ToArray();
+			}
 		}
 
 		private void OnReceive(IAsyncResult ar)

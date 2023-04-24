@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -8,12 +7,12 @@ namespace Surity
 	[Serializable]
 	public class MethodDetails
 	{
-		public string Name { get; protected set; }
-		public TypeDetails DeclaringType { get; protected set; }
-		public TypeDetails ReturnType { get; protected set; }
-		public ParameterDetails[] Parameters { get; protected set; }
-		public bool IsAsync { get; protected set; }
-		public bool IsTestMethod { get; protected set; }
+		public string Name { get; set; }
+		public TypeDetails DeclaringType { get; set; }
+		public TypeDetails ReturnType { get; set; }
+		public ParameterDetails[] Parameters { get; set; }
+		public bool IsAsync { get; set; }
+		public bool IsTestMethod { get; set; }
 
 		public MethodDetails(ResolvedMethod method)
 		{
@@ -26,7 +25,6 @@ namespace Surity
 			this.IsAsync = method.IsAsync;
 		}
 
-		[JsonConstructor]
 		private MethodDetails() { }
 	}
 }
