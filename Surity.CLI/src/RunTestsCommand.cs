@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 
 namespace Surity
@@ -62,6 +63,24 @@ Examples:
 
 		public override int Execute([NotNull] CommandContext context, [NotNull] Settings settings)
 		{
+			var testResults = new List<TestResult>();
+			var failedTestResults = new List<TestResult>();
+
+			try
+			{
+				Console.CursorVisible = false;
+			}
+			catch (IOException)
+			{
+				// Ignore
+			}
+
+			IMessage message;
+			string finishReason = "Test run stopped unexpectedly";
+			string category = "";
+
+			using var listener = new AdapterListener();
+
 			var processArgs = new List<string>() {
 				"-batchmode",
 				"-nographics",
@@ -80,16 +99,6 @@ Examples:
 				UseShellExecute = false
 			};
 
-			var testResults = new List<TestResult>();
-			var failedTestResults = new List<TestResult>();
-
-			Console.CursorVisible = false;
-			IMessage message;
-			string finishReason = "Test run stopped unexpectedly";
-			string category = "";
-			bool error = false;
-
-			using var listener = new AdapterListener();
 			using var process = Process.Start(psi);
 
 			try
@@ -159,19 +168,13 @@ Examples:
 				this.PrintSummary(testResults);
 				AnsiConsole.MarkupLine("[grey]{0}[/]", Markup.Escape(finishReason));
 			}
-			catch (Exception ex)
-			{
-				AnsiConsole.MarkupLine("\n[red]An internal error occurred during test execution[/]\n");
-				StackTraceFormatter.PrintStackTrace(new TestError(ex), null, true);
-			}
 			finally
 			{
-				error = true;
 				process.Kill();
 				process.WaitForExit();
 			}
 
-			if (error || failedTestResults.Count > 0)
+			if (failedTestResults.Count > 0)
 			{
 				return 1;
 			}

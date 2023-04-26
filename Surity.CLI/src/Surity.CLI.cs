@@ -27,10 +27,7 @@ namespace Surity
 			}
 
 			var app = new CommandApp<RunTestsCommand>();
-
-#if DEBUG
 			app.Configure(config => config.PropagateExceptions());
-#endif
 
 			try
 			{
@@ -38,7 +35,13 @@ namespace Surity
 			}
 			catch (Exception ex)
 			{
-				StackTraceFormatter.PrintStackTrace(new TestError(ex), new TypePattern("Spectre.Console.Cli.* | System.*"), true);
+				AnsiConsole.MarkupLine("\n[red]An internal error occurred during test execution[/]\n");
+
+#if DEBUG
+				StackTraceFormatter.PrintStackTrace(new TestError(ex), new TypePattern("Spectre.* | System.*"), false);
+#else
+				AnsiConsole.MarkupLineInterpolated($"[grey]Error:[/] {ex.Message}");
+#endif
 				return 1;
 			}
 		}

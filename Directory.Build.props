@@ -1,12 +1,12 @@
 <Project>
 	<PropertyGroup>
-		<Version>2.1.2</Version>
+		<Version>2.1.3</Version>
 		<RootNamespace>Surity</RootNamespace>
 		<Authors>olavim</Authors>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-		<PublishDir>$(MSBuildThisFileDirectory)release</PublishDir>
 		<PackageVersion>$(Version)</PackageVersion>
-		<PackageOutputPath>$(MSBuildThisFileDirectory)release</PackageOutputPath>
+		<PublishDir>$(MSBuildThisFileDirectory)publish/$(Configuration)</PublishDir>
+		<PackageOutputPath>$(MSBuildThisFileDirectory)publish/$(Configuration)</PackageOutputPath>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/olavim/Surity.git</RepositoryUrl>
@@ -14,6 +14,7 @@
 		<AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
 		<DebugType>full</DebugType>
 		<DebugSymbols>true</DebugSymbols>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -35,6 +36,5 @@
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
 		<DefineConstants>TRACE</DefineConstants>
 		<Optimize>true</Optimize>
-		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 	</PropertyGroup>
 </Project>
