@@ -59,6 +59,11 @@ Examples:
 			[CommandOption("-c|--compact-stacktraces")]
 			[DefaultValue(false)]
 			public bool CompactStackTraces { get; set; }
+
+			[Description("Removes some bells and whistles from output. Meant for use in environments with limited console functionality, such as CI.")]
+			[CommandOption("-s|--simple-output")]
+			[DefaultValue(false)]
+			public bool SimpleOutput { get; set; }
 		}
 
 		public override int Execute([NotNull] CommandContext context, [NotNull] Settings settings)
@@ -99,65 +104,77 @@ Examples:
 				UseShellExecute = false
 			};
 
+			string grey = settings.SimpleOutput ? "white" : "grey";
+
 			using var process = Process.Start(psi);
+
+			void HandleTests(StatusContext ctx = null)
+			{
+				listener.WaitForClient(Program.ExitEvent);
+
+				while (true)
+				{
+					message = listener.ReceiveMessage(Program.ExitEvent);
+
+					if (ctx != null && message is TestInfoMessage infoMessage)
+					{
+						ctx.Status($"Running test: [{grey}]{infoMessage.Category} \u203A {infoMessage.Name}[/]");
+					}
+
+					if (message is TestResultMessage resultMessage)
+					{
+						var result = resultMessage.Result;
+						testResults.Add(result);
+
+						if (result.TestCategory != category)
+						{
+							category = result.TestCategory;
+							AnsiConsole.WriteLine();
+							AnsiConsole.WriteLine(category);
+							AnsiConsole.WriteLine();
+						}
+
+						string check = result.Result.IsPass ? "[lime]\u221A[/] " : "[red]X[/] ";
+						AnsiConsole.MarkupLine($"    {check}[{grey}]{{0}}[/]", Markup.Escape(result.TestName));
+
+						if (!result.Result.IsPass)
+						{
+							failedTestResults.Add(result);
+						}
+					}
+
+					if (message is DebugMessage debugMessage)
+					{
+						Debug.Log(debugMessage.Message);
+					}
+
+					if (message is FinishMessage finishMessage)
+					{
+						finishReason = finishMessage.Reason;
+						break;
+					}
+
+					if (message != null)
+					{
+						listener.SendMessage(new SyncMessage());
+					}
+				}
+			}
 
 			try
 			{
-				AnsiConsole.Status()
-					.Spinner(Spinner.Known.Dots2)
-					.SpinnerStyle(new Style(foreground: Color.Grey))
-					.Start("Waiting for test adapter...", ctx =>
-					{
-						listener.WaitForClient(Program.ExitEvent);
-
-						while (true)
-						{
-							message = listener.ReceiveMessage(Program.ExitEvent);
-
-							if (message is TestInfoMessage infoMessage)
-							{
-								ctx.Status($"Running test: [grey]{infoMessage.Category} \u203A {infoMessage.Name}[/]");
-							}
-
-							if (message is TestResultMessage resultMessage)
-							{
-								var result = resultMessage.Result;
-								testResults.Add(result);
-
-								if (result.TestCategory != category)
-								{
-									category = result.TestCategory;
-									AnsiConsole.WriteLine();
-									AnsiConsole.WriteLine(category);
-									AnsiConsole.WriteLine();
-								}
-
-								string check = result.Result.IsPass ? "[lime]\u221A[/] " : "[red]X[/] ";
-								AnsiConsole.MarkupLine($"    {check}[grey]{{0}}[/]", Markup.Escape(result.TestName));
-
-								if (!result.Result.IsPass)
-								{
-									failedTestResults.Add(result);
-								}
-							}
-
-							if (message is DebugMessage debugMessage)
-							{
-								Debug.Log(debugMessage.Message);
-							}
-
-							if (message is FinishMessage finishMessage)
-							{
-								finishReason = finishMessage.Reason;
-								break;
-							}
-
-							if (message != null)
-							{
-								listener.SendMessage(new SyncMessage());
-							}
-						}
-					});
+				if (settings.SimpleOutput)
+				{
+					AnsiConsole.WriteLine("Waiting for test adapter...");
+					HandleTests();
+				}
+				else
+				{
+					AnsiConsole.Status()
+						.Spinner(Spinner.Known.Dots2)
+						.SpinnerStyle(new Style(foreground: Color.Grey))
+						.Start("Waiting for test adapter...", HandleTests);
+				}
 
 				foreach (var failedResult in failedTestResults)
 				{
@@ -166,7 +183,7 @@ Examples:
 				}
 
 				this.PrintSummary(testResults);
-				AnsiConsole.MarkupLine("[grey]{0}[/]", Markup.Escape(finishReason));
+				AnsiConsole.MarkupLine($"[{grey}]{0}[/]", Markup.Escape(finishReason));
 			}
 			finally
 			{
