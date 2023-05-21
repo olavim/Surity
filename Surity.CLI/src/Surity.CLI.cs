@@ -16,9 +16,16 @@ namespace Surity
 		{
 			Debug.SetLogger(new DebugLogger());
 
-			Console.CancelKeyPress += OnExit;
-			Console.InputEncoding = Encoding.UTF8;
-			Console.OutputEncoding = Encoding.UTF8;
+			try
+			{
+				Console.CancelKeyPress += OnExit;
+				Console.InputEncoding = Encoding.UTF8;
+				Console.OutputEncoding = Encoding.UTF8;
+			}
+			catch (Exception)
+			{
+				// Ignore
+			}
 
 			if (args.Any(s => s == "--version" || s == "-v"))
 			{
